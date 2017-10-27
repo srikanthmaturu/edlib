@@ -63,6 +63,9 @@ if (NOT WIN32) # If on windows, do not build binaries that do not support window
   add_executable(edlib-aligner apps/aligner/aligner.cpp)
   target_link_libraries(edlib-aligner edlib_static)
   use_cxx11(edlib-aligner)
+  add_executable(edlib-aligner2 apps/aligner/aligner2.cpp)
+  target_link_libraries(edlib-aligner2 edlib_static)
+  use_cxx11(edlib-aligner2)
 endif()
 
 
