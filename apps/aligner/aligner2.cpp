@@ -10,7 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <edlib.h>
-
+#include <cmath>
 #include "edlib.h"
 
 using namespace std;
@@ -26,6 +26,49 @@ void printSeq(const vector<char> &seq) {
     for (int i = 0; i < (int) seq.size(); i++)
         printf("%d ", seq[i]);
     printf("\n");
+}
+
+EdlibEqualityPair additionalEqualities[4] = {{'B','N'},{'Z','Q'}, {'x','A'}, {'X','A'}};
+
+uint64_t fastPercentIdentity(string s1, string s2, uint64_t percentIdentityThreshold) {
+    uint64_t s1_size = s1.size(), s2_size = s2.size();
+    double den = (s1_size > s2_size) ? s1_size : s2_size;
+    double num = ((s1_size > s2_size)) ? s2_size : s1_size;
+    //double pi = (percentIdentityThreshold * 1.0)/100.0;
+
+    //uint64_t thEd = ceil((num - pi*den) / (double)pi);
+
+    EdlibAlignConfig edlibConfig = edlibNewAlignConfig(-1, EDLIB_MODE_NW, EDLIB_TASK_PATH, additionalEqualities, 4);
+    EdlibAlignResult ed_result = edlibAlign(s1.c_str(), s1.size(), s2.c_str(), s2.size(), edlibConfig);
+
+    uint64_t matches = 0;
+    for(int64_t i = 0; i < ed_result.alignmentLength; i++) {
+        if(ed_result.alignment[i] == EDLIB_EDOP_MATCH) {
+            matches++;
+        }
+    }
+    auto p =  round((matches * 100.0)/(double)ed_result.alignmentLength);
+    edlibFreeAlignResult(ed_result);
+    return p;
+}
+
+uint64_t fastInfixPercentIdentity(string s1, string s2) {
+    uint64_t s1_size = s1.size(), s2_size = s2.size();
+    double den = (s1_size > s2_size) ? s1_size : s2_size;
+    double num = ((s1_size > s2_size)) ? s2_size : s1_size;
+
+    EdlibAlignConfig edlibConfig = edlibNewAlignConfig(-1, EDLIB_MODE_HW, EDLIB_TASK_PATH, additionalEqualities, 4);
+    EdlibAlignResult ed_result = edlibAlign(s1.c_str(), s1.size(), s2.c_str(), s2.size(), edlibConfig);
+
+    uint64_t matches = 0;
+    for(int64_t i = 0; i < ed_result.alignmentLength; i++) {
+        if(ed_result.alignment[i] == EDLIB_EDOP_MATCH) {
+            matches++;
+        }
+    }
+    auto p =  round((matches * 100.0)/(double)ed_result.alignmentLength);
+    edlibFreeAlignResult(ed_result);
+    return p;
 }
 
 string alignSequences(vector<char> firstSequence, vector<char> secondSequence, EdlibAlignConfig edlibAlignConfig){
@@ -68,7 +111,10 @@ string alignSequences(vector<char> firstSequence, vector<char> secondSequence, E
         alignSequence = alignSequence + string{secondSequence.begin() + tIdx + 1, secondSequence.end()};
     }
     printAlignment(firstSequence.data(), secondSequence.data(),  alignResult.alignment, alignResult.alignmentLength,  *(alignResult.endLocations), EDLIB_MODE_HW);
+    cout << "Edit distance: " << alignResult.editDistance << endl;
     edlibFreeAlignResult(alignResult);
+    cout << "Percent identity: " << fastPercentIdentity(firstSequence.data(), secondSequence.data(), 0) << endl;
+    cout << "Infix Percent identity: " << fastInfixPercentIdentity(firstSequence.data(), secondSequence.data()) << endl;
     return alignSequence;
 }
 
